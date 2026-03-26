@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 
-	<Version>0.0.1</Version>
+	<Version>0.1.0</Version>
 	<Authors>oscarcsg</Authors>
 	<Company>CompileMind</Company>
 	<Description>Main API to connect StoreYourStuff app with its database.</Description>
@@ -16,6 +16,11 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Data\" />
+    <Folder Include="Controllers\" />
   </ItemGroup>
 
 </Project>
