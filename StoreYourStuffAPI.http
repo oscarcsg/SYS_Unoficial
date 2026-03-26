@@ -1,6 +1,6 @@
 @StoreYourStuffAPI_HostAddress = http://localhost:5202
 
-GET {{StoreYourStuffAPI_HostAddress}}/weatherforecast/
+GET {{StoreYourStuffAPI_HostAddress}}
 Accept: application/json
 
 ###
