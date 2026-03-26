@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 
-	<Version>0.2.0</Version>
+	<Version>0.3.0</Version>
 	<Authors>oscarcsg</Authors>
 	<Company>CompileMind</Company>
 	<Description>Main API to connect StoreYourStuff app with its database.</Description>
@@ -21,10 +21,6 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.5" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Controllers\" />
   </ItemGroup>
 
 </Project>
