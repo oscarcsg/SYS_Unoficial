@@ -12,7 +12,7 @@
 
         // Navigation Properties
         // The owner of this link
-        public User Owner { get; set; } = null;
+        public User Owner { get; set; } = null!;
         // This link's categories
         public ICollection<LinkCategory> LinkCategories { get; set; } = [];
         // This link's shared users
