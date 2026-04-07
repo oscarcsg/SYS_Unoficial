@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using StoreYourStuffAPI.Data;
 using StoreYourStuffAPI.DTOs.User;
 using StoreYourStuffAPI.Models;
+using StoreYourStuffAPI.Security;
 
 namespace StoreYourStuffAPI.Controllers
 {
@@ -12,11 +13,15 @@ namespace StoreYourStuffAPI.Controllers
     {
         #region Attributes
         private readonly AppDbContext _context;
+        private readonly IPasswordHasher _passwordHasher;
         #endregion
 
         #region Constructors
         // Dependences injection: program will give automaticalle the DDBB translator to this controller
-        public UsersController(AppDbContext context) { _context = context; }
+        public UsersController(AppDbContext context, IPasswordHasher passwordHasher) {
+            _context = context;
+            _passwordHasher = passwordHasher;
+        }
         #endregion
 
         #region GET
@@ -31,7 +36,8 @@ namespace StoreYourStuffAPI.Controllers
                     Id = u.Id,
                     Alias = u.Alias,
                     Email = u.Email,
-                    CreatedAt = u.CreatedAt
+                    CreatedAt = u.CreatedAt,
+                    LastSignIn = u.LastSignIn,
                 })
                 .ToListAsync();
 
@@ -41,14 +47,15 @@ namespace StoreYourStuffAPI.Controllers
 
         #region POST
         [HttpPost]
-        public async Task<ActionResult<UserCreateDTO>> CreateUser(UserCreateDTO newUser)
+        public async Task<ActionResult<UserResponseDTO>> CreateUser(UserCreateDTO newUser)
         {
+            var hashedPassword = _passwordHasher.HashPassword(newUser.Password);
             // Transform the DTO to a real User Model of the DDBB
             var userEntity = new User
             {
                 Alias = newUser.Alias,
                 Email = newUser.Email,
-                Password = newUser.Password // THIS HAS TO BE HASHED
+                Password = hashedPassword
             };
 
             // Send to DDBB
@@ -61,7 +68,8 @@ namespace StoreYourStuffAPI.Controllers
                 Id = userEntity.Id,
                 Alias = userEntity.Alias,
                 Email = userEntity.Email,
-                CreatedAt = userEntity.CreatedAt
+                CreatedAt = userEntity.CreatedAt,
+                LastSignIn = userEntity.LastSignIn,
             };
 
             // Devuelve un código 201 (Creado) y los datos seguros del usuario

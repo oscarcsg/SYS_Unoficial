@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using StoreYourStuffAPI.Data;
+using StoreYourStuffAPI.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,9 @@ builder.Services.AddRouting(options => options.LowercaseUrls = true);
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+// Service for hashing
+builder.Services.AddScoped<IPasswordHasher, Argon2PasswordHasher>();
 
 var app = builder.Build();
 
