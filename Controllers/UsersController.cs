@@ -43,6 +43,22 @@ namespace StoreYourStuffAPI.Controllers
 
             return Ok(usuarios);
         }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<UserResponseDTO>> GetUserById(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound();
+
+            return new UserResponseDTO
+            {
+                Id = user.Id,
+                Alias = user.Alias,
+                Email = user.Email,
+                CreatedAt = user.CreatedAt,
+                LastSignIn = user.LastSignIn,
+            };
+        }
         #endregion
 
         #region POST
@@ -73,7 +89,45 @@ namespace StoreYourStuffAPI.Controllers
             };
 
             // Devuelve un código 201 (Creado) y los datos seguros del usuario
-            return CreatedAtAction(nameof(GetUsers), new { id = userEntity.Id }, responseDTO);
+            return CreatedAtAction(nameof(GetUserById), new { id = userEntity.Id }, responseDTO);
+        }
+        #endregion
+
+        #region Login
+        [HttpPost("login")] // ENDPOINT: POST api/users/login
+        public async Task<IActionResult> Login([FromBody] LoginDTO loginAttempt)
+        {
+            if (string.IsNullOrWhiteSpace(loginAttempt.Alias) && string.IsNullOrWhiteSpace(loginAttempt.Email))
+                return BadRequest(new { message = "An alias or email is required for login." });
+
+            // Search the data of the user depending on the data given by the form
+            var user = await _context.Users.FirstOrDefaultAsync(u => 
+                (!string.IsNullOrWhiteSpace(loginAttempt.Alias) && u.Alias == loginAttempt.Alias) ||
+                (!string.IsNullOrWhiteSpace(loginAttempt.Email) && u.Email == loginAttempt.Email)
+            );
+
+            // Make sure if the user exists
+            if (user == null) return Unauthorized(new { message = "Invalid credentials." });
+
+            // If the user exists, verify the password with the hashed one
+            if (!_passwordHasher.VerifyPassword(loginAttempt.Password, user.Password)) return Unauthorized(new { message = "Invalid credentials." });
+
+            // If the password is correct, update the last login date
+            user.LastSignIn = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Correct Login.",
+                userData = new
+                {
+                    id = user.Id,
+                    alias = user.Alias,
+                    email = user.Email,
+                    lastLogin = user.LastSignIn,
+                    links = user.Links
+                }
+            });
         }
         #endregion
     }

@@ -1,4 +1,6 @@
-﻿namespace StoreYourStuffAPI.Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace StoreYourStuffAPI.Models
 {
     public class User
     {
@@ -6,6 +8,8 @@
         public string Alias { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
+
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public DateTime CreatedAt { get; set; } // DDBB sets this automatically
         public DateTime? LastSignIn { get; set; }
 
