@@ -16,7 +16,7 @@ namespace StoreYourStuffAPI.DTOs.Link
         [Url(ErrorMessage = "URL format is not valid.")]
         public string Url { get; set; } = string.Empty;
 
-        public bool IsSecure { get; set; }
+        public bool IsPrivate { get; set; }
 
         [Range(1, int.MaxValue, ErrorMessage = "A valid Owner ID is mandatory (min 1, max int.max)")]
         public int OwnerId { get; set; }

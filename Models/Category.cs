@@ -5,7 +5,7 @@
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string HexColor { get; set; } = "d2d2d2";
-        public bool Private { get; set; } = false;
+        public bool IsPrivate { get; set; } = false;
         public int? OwnerId { get; set; }
 
         // Navigation Properties

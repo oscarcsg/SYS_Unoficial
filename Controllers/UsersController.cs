@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StoreYourStuffAPI.Data;
+using StoreYourStuffAPI.DTOs.Category;
+using StoreYourStuffAPI.DTOs.Link;
 using StoreYourStuffAPI.DTOs.User;
 using StoreYourStuffAPI.Models;
 using StoreYourStuffAPI.Security;
@@ -17,16 +19,15 @@ namespace StoreYourStuffAPI.Controllers
         #endregion
 
         #region Constructors
-        // Dependences injection: program will give automaticalle the DDBB translator to this controller
+        // Dependences injection: program will give automatically the DDBB translator to this controller
         public UsersController(AppDbContext context, IPasswordHasher passwordHasher) {
             _context = context;
             _passwordHasher = passwordHasher;
         }
         #endregion
 
-        #region GET
-        // Petition to get every user
-        // GET api/users
+        #region GET USERS
+        // GET all users (GET /api/users)
         [HttpGet]
         public async Task<ActionResult<IEnumerable<UserResponseDTO>>> GetUsers()
         {
@@ -44,10 +45,11 @@ namespace StoreYourStuffAPI.Controllers
             return Ok(usuarios);
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<UserResponseDTO>> GetUserById(int id)
+        // GET user by id (GET /api/users/{userId})
+        [HttpGet("{userId}")]
+        public async Task<ActionResult<UserResponseDTO>> GetUserById(int userId)
         {
-            var user = await _context.Users.FindAsync(id);
+            var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound();
 
             return new UserResponseDTO
@@ -59,9 +61,57 @@ namespace StoreYourStuffAPI.Controllers
                 LastSignIn = user.LastSignIn,
             };
         }
+
+        // GET all the public links of an user with id (GET /api/users/{userId}/links)
+        [HttpGet("{userId}/links")]
+        public async Task<ActionResult<IEnumerable<LinkResponseDTO>>> GetPublicLinksOfUser(int userId)
+        {
+            // Ensure the user exists
+            if (!await _context.Users.AnyAsync(u => u.Id == userId))
+                return NotFound(new { message = "User does not exists." });
+
+            // Get all user' links
+            var publicLinks = await _context.Links
+                .Where(l => l.OwnerId == userId && !l.IsPrivate)
+                .Select(l => new LinkResponseDTO
+                {
+                    Id = l.Id,
+                    Title = l.Title,
+                    Description = l.Description,
+                    Url = l.Url,
+                    IsPrivate = l.IsPrivate,
+                    OwnerId = l.OwnerId,
+                    CreatedAt = l.CreatedAt,
+
+                    // SubSelect
+                    Categories = l.LinkCategories
+                        .Select(lc => lc.Category) // Go to the Category table
+                        .Where(c =>
+                            // Only the categories which owner is the system (null) or the same owner
+                            // than the link and is public
+                            (c.OwnerId == l.OwnerId || c.OwnerId == null) && !c.IsPrivate
+                        )
+                        .Select(c => new CategoryResponseDTO
+                        {
+                            Id = c.Id,
+                            Name = c.Name,
+                            HexColor = c.HexColor,
+                            IsPrivate = c.IsPrivate,
+                            OwnerId = c.OwnerId
+                        })
+                        .ToList() // Create a list for the Links DTO
+                })
+                .ToListAsync();
+
+            return Ok(publicLinks);
+        }
+
+        // GET all the public categories of an user with id (GET /api/users/{userId}/categories)
+        //[HttpGet("{userId}/categories")]
         #endregion
 
-        #region POST
+        #region POST USERS
+        // POST to create a new user (POST /api/users)
         [HttpPost]
         public async Task<ActionResult<UserResponseDTO>> CreateUser(UserCreateDTO newUser)
         {
@@ -94,7 +144,8 @@ namespace StoreYourStuffAPI.Controllers
         #endregion
 
         #region Login
-        [HttpPost("login")] // ENDPOINT: POST api/users/login
+        // POST for login verification (POST /api/users/login)
+        [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDTO loginAttempt)
         {
             if (string.IsNullOrWhiteSpace(loginAttempt.Alias) && string.IsNullOrWhiteSpace(loginAttempt.Email))

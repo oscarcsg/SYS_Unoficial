@@ -6,7 +6,7 @@
         public string Title { get; set; } = string.Empty;
         public string? Description { get; set; }
         public string Url { get; set; } = string.Empty;
-        public bool IsSecure { get; set; } = false;
+        public bool IsPrivate { get; set; } = false;
         public int OwnerId { get; set; }
         public DateTime CreatedAt { get; set; } // DDBB set it automatically
 

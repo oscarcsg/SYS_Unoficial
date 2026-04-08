@@ -5,7 +5,7 @@
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string HexColor { get; set; } = "d2d2d2";
-        public bool Private { get; set; }
+        public bool IsPrivate { get; set; }
         public int? OwnerId { get; set; }
     }
 }
