@@ -20,5 +20,9 @@ namespace StoreYourStuffAPI.Models
         public ICollection<Category> Categories { get; set; } = [];
         // Links shared to other users
         public ICollection<SharedLink> SharedLinks { get; set; } = [];
+        // Friendships requested by this user
+        public ICollection<Friendship> RequestedFriendships { get; set; } = [];
+        // Friendships where this user is the addressee
+        public ICollection<Friendship> ReceivedFriendships { get; set; } = [];
     }
 }

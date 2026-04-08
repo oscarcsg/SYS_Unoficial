@@ -31,6 +31,21 @@ namespace StoreYourStuffAPI.Data
             modelBuilder.Entity<SharedLink>()
                 .HasKey(sl => new { sl.LinkId, sl.UserId });
 
+            modelBuilder.Entity<Friendship>()
+                .HasKey(f => new { f.RequesterId, f.AddresseeId });
+
+            modelBuilder.Entity<Friendship>()
+                .HasOne(f => f.Requester)
+                .WithMany(u => u.RequestedFriendships)
+                .HasForeignKey(f => f.RequesterId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Friendship>()
+                .HasOne(f => f.Addressee)
+                .WithMany(u => u.ReceivedFriendships)
+                .HasForeignKey(f => f.AddresseeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // Map the "Id" properties of the classes to the real column names of the DDBB
             modelBuilder.Entity<User>().Property(u => u.Id).HasColumnName("userId");
             modelBuilder.Entity<Link>().Property(l => l.Id).HasColumnName("linkId");
@@ -40,6 +55,7 @@ namespace StoreYourStuffAPI.Data
             modelBuilder.Entity<User>().ToTable("Users");
             modelBuilder.Entity<Link>().ToTable("Links");
             modelBuilder.Entity<Category>().ToTable("Categories");
+            modelBuilder.Entity<Friendship>().ToTable("Friendships");
         }
         #endregion
     }
