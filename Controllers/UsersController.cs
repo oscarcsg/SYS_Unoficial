@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
 using StoreYourStuffAPI.Data;
 using StoreYourStuffAPI.DTOs.Category;
 using StoreYourStuffAPI.DTOs.Link;
@@ -64,7 +65,7 @@ namespace StoreYourStuffAPI.Controllers
 
         // GET all the public links of an user with id (GET /api/users/{userId}/links)
         [HttpGet("{userId}/links")]
-        public async Task<ActionResult<IEnumerable<LinkResponseDTO>>> GetPublicLinksOfUser(int userId)
+        public async Task<ActionResult<IEnumerable<LinkResponseDTO>>> GetAllPublicUserLinks(int userId)
         {
             // Ensure the user exists
             if (!await _context.Users.AnyAsync(u => u.Id == userId))
@@ -107,7 +108,28 @@ namespace StoreYourStuffAPI.Controllers
         }
 
         // GET all the public categories of an user with id (GET /api/users/{userId}/categories)
-        //[HttpGet("{userId}/categories")]
+        [HttpGet("{userId}/categories")]
+        public async Task<ActionResult<IEnumerable<CategoryResponseDTO>>> GetAllPublicUserCategories(int userId)
+        {
+            // Check if the user exists
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound(new { message = "User not found." });
+
+            // Get all user' categories
+            var userCategories = await _context.Categories
+                .Where(c => c.OwnerId == userId && !c.IsPrivate)
+                .Select(c => new CategoryResponseDTO
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    HexColor = c.HexColor,
+                    IsPrivate = c.IsPrivate,
+                    OwnerId = c.OwnerId
+                })
+                .ToListAsync();
+
+            return Ok(userCategories);
+        }
         #endregion
 
         #region POST USERS
