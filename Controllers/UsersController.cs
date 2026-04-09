@@ -1,7 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Client;
-using Microsoft.IdentityModel.JsonWebTokens;
 using StoreYourStuffAPI.Data;
 using StoreYourStuffAPI.DTOs.Category;
 using StoreYourStuffAPI.DTOs.Link;
@@ -196,6 +195,59 @@ namespace StoreYourStuffAPI.Controllers
         #endregion
 
         #region PUT USERS
+        [Authorize]
+        [HttpPut("profile")]
+        public async Task<IActionResult> UpdateProfile([FromBody] UserUpdateDTO updateData)
+        {
+            // Secure extraction of the token data
+            var userIdString = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                            ?? User.FindFirst("sub")?.Value;
+
+            if (!int.TryParse(userIdString, out int userId))
+                return Unauthorized(new { message = "Invalid or corrupted token." });
+
+            // Get the user from the DDBB
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+                return NotFound(new { message = "User not found." });
+
+            // If this flag is true, then there are changes
+            bool hasChanges = false;
+
+            if (!string.IsNullOrWhiteSpace(updateData.Alias) && !string.Equals(user.Alias, updateData.Alias))
+            {
+                bool exists = await _context.Users.AnyAsync(u => u.Alias == updateData.Alias);
+                if (exists) return BadRequest(new { message = "Alias already exists." });
+                user.Alias = updateData.Alias;
+                hasChanges = true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(updateData.Email) && !string.Equals(user.Email, updateData.Email))
+            {
+                bool exists = await _context.Users.AnyAsync(u => u.Email == updateData.Email);
+                if (exists) return BadRequest(new { message = "Email already exists." });
+                user.Email = updateData.Email;
+                hasChanges = true;
+            }
+
+            // If any change, update the database
+            if (hasChanges)
+            {
+                await _context.SaveChangesAsync();
+            }
+
+            // Return Ok with the updated data
+            return Ok(new
+            {
+                message = "Profile updated successfully.",
+                user = new
+                {
+                    id = user.Id,
+                    alias = user.Alias,
+                    email = user.Email
+                }
+            });
+        }
         #endregion
 
         #region Login
@@ -235,7 +287,6 @@ namespace StoreYourStuffAPI.Controllers
                     alias = user.Alias,
                     email = user.Email,
                     lastLogin = user.LastSignIn,
-                    links = user.Links
                 }
             });
         }
