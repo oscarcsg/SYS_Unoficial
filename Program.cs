@@ -1,6 +1,9 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using StoreYourStuffAPI.Data;
 using StoreYourStuffAPI.Security;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +27,30 @@ builder.Services.AddScoped<IPasswordHasher, Argon2PasswordHasher>();
 // Service for token
 builder.Services.AddScoped<ITokenService, TokenService>();
 
+// Service for token authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            // Review the math sign with the secret key
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"]!)),
+
+            // Review the creator name is mine
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
+
+            // Review it go forward the app
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["JwtSettings:Audience"],
+
+            // Review caducity
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero // No mercy time with rotten tokens
+        };
+    });
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -33,6 +60,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Token autentications
+app.UseAuthentication(); // Make sure the token is real
+app.UseAuthorization();  // Allowed to enter authorized sections?
 
 app.MapControllers();
 

@@ -169,6 +169,9 @@ namespace StoreYourStuffAPI.Controllers
         }
         #endregion
 
+        #region PUT USERS
+        #endregion
+
         #region Login
         // POST for login verification (POST /api/users/login)
         [HttpPost("login")]
