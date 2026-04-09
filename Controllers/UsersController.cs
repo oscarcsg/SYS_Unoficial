@@ -33,6 +33,9 @@ namespace StoreYourStuffAPI.Controllers
 
         #region GET USERS
         // GET all users (GET /api/users)
+        // TODO: MODIFICAR ESTE MÉTODO PARA HACERLO MODO EXPLORACIÓN, es decir, que traiga solo 20 usuarios por ejemplo
+            // y sólo con id, alias, total_links_publicos y total_categorias_publicas para implementarlo
+            // en una ventana de exploración general de usuarios con posibilidad de filtrado y ordenado.
         [HttpGet]
         public async Task<ActionResult<IEnumerable<UserResponseDTO>>> GetUsers()
         {
@@ -48,6 +51,29 @@ namespace StoreYourStuffAPI.Controllers
                 .ToListAsync();
 
             return Ok(usuarios);
+        }
+
+        // GET user searched by alias or email (GET /api/users/search?search=)
+        [HttpGet("search")]
+        public async Task<ActionResult<IEnumerable<UserSearchDTO>>> SearchUser([FromQuery] string? search)
+        {
+            if (string.IsNullOrWhiteSpace(search))
+                return BadRequest(new { message = "Search string can not be empty." });
+
+            if (search.Trim().Length < 3)
+                return BadRequest(new { message = "At least 3 characters are required." });
+
+            var users = await _context.Users
+                .Where(u => u.Alias.Contains(search) || u.Email.Contains(search))
+                .Select(u => new UserSearchDTO
+                {
+                    Id = u.Id,
+                    Alias = u.Alias,
+                    Email = u.Email
+                })
+                .ToListAsync();
+
+            return Ok(users);
         }
 
         // GET user by id (GET /api/users/{userId})
