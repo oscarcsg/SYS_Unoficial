@@ -21,6 +21,9 @@ builder.Services.AddOpenApi();
 // Service for hashing
 builder.Services.AddScoped<IPasswordHasher, Argon2PasswordHasher>();
 
+// Service for token
+builder.Services.AddScoped<ITokenService, TokenService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

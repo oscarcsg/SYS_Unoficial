@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
+using Microsoft.IdentityModel.JsonWebTokens;
 using StoreYourStuffAPI.Data;
 using StoreYourStuffAPI.DTOs.Category;
 using StoreYourStuffAPI.DTOs.Link;
@@ -17,13 +18,16 @@ namespace StoreYourStuffAPI.Controllers
         #region Attributes
         private readonly AppDbContext _context;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly ITokenService _tokenService;
         #endregion
 
         #region Constructors
         // Dependences injection: program will give automatically the DDBB translator to this controller
-        public UsersController(AppDbContext context, IPasswordHasher passwordHasher) {
+        public UsersController(AppDbContext context, IPasswordHasher passwordHasher, ITokenService tokenService)
+        {
             _context = context;
             _passwordHasher = passwordHasher;
+            _tokenService = tokenService;
         }
         #endregion
 
@@ -161,7 +165,7 @@ namespace StoreYourStuffAPI.Controllers
             };
 
             // Devuelve un código 201 (Creado) y los datos seguros del usuario
-            return CreatedAtAction(nameof(GetUserById), new { id = userEntity.Id }, responseDTO);
+            return CreatedAtAction(nameof(GetUserById), new { userId = userEntity.Id }, responseDTO);
         }
         #endregion
 
@@ -189,9 +193,13 @@ namespace StoreYourStuffAPI.Controllers
             user.LastSignIn = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
+            // Generate the token
+            var jwtToken = _tokenService.CreateToken(user);
+
             return Ok(new
             {
                 message = "Correct Login.",
+                token = jwtToken,
                 userData = new
                 {
                     id = user.Id,
