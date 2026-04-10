@@ -30,7 +30,7 @@ namespace StoreYourStuffAPI.Controllers
         }
         #endregion
 
-        #region GET USERS
+        #region GET
         // GET all users (GET /api/users)
         // TODO: MODIFICAR ESTE MÉTODO PARA HACERLO MODO EXPLORACIÓN, es decir, que traiga solo 20 usuarios por ejemplo
             // y sólo con id, alias, total_links_publicos y total_categorias_publicas para implementarlo
@@ -94,7 +94,7 @@ namespace StoreYourStuffAPI.Controllers
 
         // GET all the public links of an user with id (GET /api/users/{userId}/links)
         [HttpGet("{userId}/links")]
-        public async Task<ActionResult<IEnumerable<LinkResponseDTO>>> GetAllPublicUserLinks(int userId)
+        public async Task<ActionResult<IEnumerable<LinkPreviewDTO>>> GetAllPublicUserLinks(int userId)
         {
             // Ensure the user exists
             if (!await _context.Users.AnyAsync(u => u.Id == userId))
@@ -103,33 +103,13 @@ namespace StoreYourStuffAPI.Controllers
             // Get all user' links
             var publicLinks = await _context.Links
                 .Where(l => l.OwnerId == userId && !l.IsPrivate)
-                .Select(l => new LinkResponseDTO
+                .Select(l => new LinkPreviewDTO
                 {
                     Id = l.Id,
                     Title = l.Title,
                     Description = l.Description,
-                    Url = l.Url,
                     IsPrivate = l.IsPrivate,
                     OwnerId = l.OwnerId,
-                    CreatedAt = l.CreatedAt,
-
-                    // SubSelect
-                    Categories = l.LinkCategories
-                        .Select(lc => lc.Category) // Go to the Category table
-                        .Where(c =>
-                            // Only the categories which owner is the system (null) or the same owner
-                            // than the link and is public
-                            (c.OwnerId == l.OwnerId || c.OwnerId == null) && !c.IsPrivate
-                        )
-                        .Select(c => new CategoryResponseDTO
-                        {
-                            Id = c.Id,
-                            Name = c.Name,
-                            HexColor = c.HexColor,
-                            IsPrivate = c.IsPrivate,
-                            OwnerId = c.OwnerId
-                        })
-                        .ToList() // Create a list for the Links DTO
                 })
                 .ToListAsync();
 
@@ -161,7 +141,7 @@ namespace StoreYourStuffAPI.Controllers
         }
         #endregion
 
-        #region POST USERS
+        #region POST
         // POST to create a new user (POST /api/users)
         [HttpPost]
         public async Task<ActionResult<UserResponseDTO>> CreateUser(UserCreateDTO newUser)
@@ -194,7 +174,7 @@ namespace StoreYourStuffAPI.Controllers
         }
         #endregion
 
-        #region PUT USERS
+        #region PUT
         [Authorize]
         [HttpPut("profile")]
         public async Task<IActionResult> UpdateProfile([FromBody] UserUpdateDTO updateData)

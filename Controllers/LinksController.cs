@@ -1,7 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
 using StoreYourStuffAPI.Data;
 using StoreYourStuffAPI.DTOs.Category;
+using StoreYourStuffAPI.DTOs.Link;
+using StoreYourStuffAPI.Extensions;
 
 namespace StoreYourStuffAPI.Controllers
 {
@@ -18,45 +22,89 @@ namespace StoreYourStuffAPI.Controllers
         public LinksController(AppDbContext context) { _context = context; }
         #endregion
 
-        #region GET LINKS
-        // GET all link's categories (GET /api/links/{linkId}/categories)
-        [HttpGet("{linkId}/categories")]
-        public async Task<ActionResult<IEnumerable<CategoryResponseDTO>>> GetAllLinkCategories(int linkId)
+        #region GET
+        // GET a preview of all links of the user using the token (GET /api/links)
+        [Authorize]
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<LinkPreviewDTO>>> GetAllUserLinks()
         {
-            // Ensure the link exists
-            var link = await _context.Links.FindAsync(linkId);
-            if (link == null)
-                return NotFound(new { message = "Link not found." });
+            // Get the user from the DDBB
+            var userId = User.GetUserId();
 
-            // Get all link' categories (using intermediate table LinkCategories)
-            var linkCategories = _context.LinkCategories
-                // Where the linkIds are the same than the link to search
-                .Where(lc => lc.LinkId == linkId)
-                // Get only those categories
-                .Select(lc => lc.Category)
-
-                .Where(c =>
-                    // Category' owner is the same than the link or the system
-                    (c.OwnerId == link.OwnerId || c.OwnerId == null)
-                    // And is public
-                    && !c.IsPrivate
-                )
-                // Map to DTO
-                .Select(c => new CategoryResponseDTO
+            var userLinks = await _context.Links
+                .Where(l => l.OwnerId == userId)
+                .Select(l => new LinkPreviewDTO
                 {
-                    Id = c.Id,
-                    Name = c.Name,
-                    HexColor = c.HexColor,
-                    IsPrivate = c.IsPrivate,
-                    OwnerId = c.OwnerId
+                    Id = l.Id,
+                    Title = l.Title,
+                    Description = l.Description,
+                    IsPrivate = l.IsPrivate,
+                    OwnerId = l.OwnerId
                 })
                 .ToListAsync();
 
-            return Ok(linkCategories);
+            return Ok(userLinks);
+        }
+
+        // GET the detail of a link by its id (GET /api/links/{linkId})
+        [HttpGet("{linkId}")]
+        public async Task<ActionResult<LinkResponseDTO>> GetLinkDetail(long linkId)
+        {
+            // Get the link to compare the owner id and privacy flag
+            var link = await GetLinkDetails(linkId);
+
+            if (link == null) return NotFound(new { message = $"Link with id {linkId} not found." });
+
+            // Check if the link is public
+            if (!link.IsPrivate) return Ok(link);
+
+            // THE LINK IS PRIVATE
+            // Get the user id with the token
+            if (User.Identity?.IsAuthenticated != true)
+                return Unauthorized(new { message = "This link is private. If it is yours, you need to log-in first." });
+            
+            var userId = User.GetUserId();
+            return link.OwnerId != userId ? Forbid() : Ok(link);
         }
         #endregion
 
-        #region POST LINKS
+        #region POST
+        #endregion
+
+        #region PUT
+        #endregion
+
+        #region Methods
+        private async Task<LinkResponseDTO?> GetLinkDetails(long linkId)
+        {
+            var link = await _context.Links
+                .Where(l => l.Id == linkId)
+                .Select(l => new LinkResponseDTO
+                {
+                    Id = l.Id,
+                    Title = l.Title,
+                    Description = l.Description,
+                    Url = l.Url,
+                    IsPrivate = l.IsPrivate,
+                    OwnerId = l.OwnerId,
+                    CreatedAt = l.CreatedAt,
+                    Categories = l.LinkCategories
+                        .Select(lc => lc.Category)
+                        .Where(c => !c.IsPrivate || c.OwnerId == l.OwnerId)
+                        .Select(c => new CategoryResponseDTO
+                        {
+                            Id = c.Id,
+                            Name = c.Name,
+                            HexColor = c.HexColor,
+                            IsPrivate = c.IsPrivate,
+                            OwnerId = c.OwnerId
+                        })
+                        .ToList()
+                })
+                .FirstOrDefaultAsync();
+
+            return link;
+        }
         #endregion
     }
 }
