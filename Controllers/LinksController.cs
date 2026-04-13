@@ -63,7 +63,7 @@ namespace StoreYourStuffAPI.Controllers
             // Get the user id with the token
             if (User.Identity?.IsAuthenticated != true)
                 return Unauthorized(new { message = "This link is private. If it is yours, you need to log-in first." });
-            
+
             var userId = User.GetUserId();
             return link.OwnerId != userId ? Forbid() : Ok(link);
         }
@@ -91,7 +91,7 @@ namespace StoreYourStuffAPI.Controllers
             {
                 // SECURITY: search those cats ids on ddbb if they exists and are from the system or user
                 var validCategoriesIds = await _context.Categories
-                    .Where(c => 
+                    .Where(c =>
                         newLink.CategoriesIds.Contains(c.Id) &&
                         (c.OwnerId == null || c.OwnerId == userId)
                     )
@@ -99,7 +99,7 @@ namespace StoreYourStuffAPI.Controllers
                     .ToListAsync();
 
                 // Create the relation link-category for each valid category
-                validCategoriesIds.ForEach(cid => 
+                validCategoriesIds.ForEach(cid =>
                     linkEntity.LinkCategories.Add(
                         new LinkCategory {
                             CategoryId = cid,
@@ -145,6 +145,32 @@ namespace StoreYourStuffAPI.Controllers
             hasChanges |= await TryUpdateCategoriesAsync(link, updateData.CategoriesIds, userId);
 
             if (hasChanges) await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+        #endregion
+
+        #region DELETE
+        [Authorize]
+        [HttpDelete("{linkId}")]
+        public async Task<IActionResult> DeleteLink(long linkId)
+        {
+            var userId = User.GetUserId();
+
+            // Get the link
+            var link = await _context.Links.FindAsync(linkId);
+
+            // If not exists, return 404
+            if (link == null)
+                return NotFound(new { message = "Link not found." });
+
+            // Check the link is of the user trying to delete it
+            if (link.OwnerId != userId)
+                return Forbid();
+
+            // Execute the deletetion
+            _context.Links.Remove(link);
+            await _context.SaveChangesAsync();
 
             return NoContent();
         }
