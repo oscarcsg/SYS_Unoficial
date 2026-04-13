@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Client;
 using StoreYourStuffAPI.Data;
 using StoreYourStuffAPI.DTOs.Category;
 using StoreYourStuffAPI.DTOs.Link;
@@ -70,6 +69,7 @@ namespace StoreYourStuffAPI.Controllers
         #endregion
 
         #region POST
+        // Creates a new link (POST /api/links)
         [Authorize]
         [HttpPost]
         public async Task<ActionResult<LinkResponseDTO>> CreateLink(LinkCreateDTO newLink)
@@ -120,6 +120,7 @@ namespace StoreYourStuffAPI.Controllers
         #endregion
 
         #region PUT
+        // Updates a link (PUT /api/links/{linkId})
         [Authorize]
         [HttpPut("{linkId}")]
         public async Task<IActionResult> UpdateLink([FromBody] LinkUpdateDTO updateData, long linkId)
@@ -151,6 +152,7 @@ namespace StoreYourStuffAPI.Controllers
         #endregion
 
         #region DELETE
+        // Deletes a link (DELETE /api/links/{linkId})
         [Authorize]
         [HttpDelete("{linkId}")]
         public async Task<IActionResult> DeleteLink(long linkId)
