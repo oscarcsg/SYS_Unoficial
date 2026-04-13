@@ -5,6 +5,7 @@ using StoreYourStuffAPI.Data;
 using StoreYourStuffAPI.DTOs.Category;
 using StoreYourStuffAPI.DTOs.Link;
 using StoreYourStuffAPI.DTOs.User;
+using StoreYourStuffAPI.Extensions;
 using StoreYourStuffAPI.Models;
 using StoreYourStuffAPI.Security;
 
@@ -159,7 +160,7 @@ namespace StoreYourStuffAPI.Controllers
             _context.Users.Add(userEntity);
             await _context.SaveChangesAsync();
 
-            // 3. Transformamos el nuevo usuario a un DTO seguro para devolverlo
+            // Transform the new user to a secure DTO to return it
             var responseDTO = new UserResponseDTO
             {
                 Id = userEntity.Id,
@@ -169,7 +170,7 @@ namespace StoreYourStuffAPI.Controllers
                 LastSignIn = userEntity.LastSignIn,
             };
 
-            // Devuelve un código 201 (Creado) y los datos seguros del usuario
+            // Return a 201 code (created) and user's secure data
             return CreatedAtAction(nameof(GetUserById), new { userId = userEntity.Id }, responseDTO);
         }
         #endregion
@@ -179,13 +180,7 @@ namespace StoreYourStuffAPI.Controllers
         [HttpPut("profile")]
         public async Task<IActionResult> UpdateProfile([FromBody] UserUpdateDTO updateData)
         {
-            // Secure extraction of the token data
-            var userIdString = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-                            ?? User.FindFirst("sub")?.Value;
-
-            if (!int.TryParse(userIdString, out int userId))
-                return Unauthorized(new { message = "Invalid or corrupted token." });
-
+            var userId = User.GetUserId();
             // Get the user from the DDBB
             var user = await _context.Users.FindAsync(userId);
             if (user == null)
@@ -222,7 +217,7 @@ namespace StoreYourStuffAPI.Controllers
                 message = "Profile updated successfully.",
                 user = new
                 {
-                    id = user.Id,
+                    id = userId,
                     alias = user.Alias,
                     email = user.Email
                 }

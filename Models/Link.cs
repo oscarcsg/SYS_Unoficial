@@ -1,4 +1,6 @@
-﻿namespace StoreYourStuffAPI.Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace StoreYourStuffAPI.Models
 {
     public class Link
     {
@@ -8,6 +10,7 @@
         public string Url { get; set; } = string.Empty;
         public bool IsPrivate { get; set; } = false;
         public int OwnerId { get; set; }
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public DateTime CreatedAt { get; set; } // DDBB set it automatically
 
         // Navigation Properties

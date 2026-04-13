@@ -18,9 +18,6 @@ namespace StoreYourStuffAPI.DTOs.Link
 
         public bool IsPrivate { get; set; }
 
-        [Range(1, int.MaxValue, ErrorMessage = "A valid Owner ID is mandatory (min 1, max int.max)")]
-        public int OwnerId { get; set; }
-
         public List<int> CategoriesIds { get; set; } = [];
     }
 }
