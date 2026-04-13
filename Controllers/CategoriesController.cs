@@ -80,9 +80,57 @@ namespace StoreYourStuffAPI.Controllers
         #endregion
 
         #region PUT
+        // Updates an existing category with the token (PUT /api/categories/{categoryId})
+        [Authorize]
+        [HttpPut("{categoryId}")]
+        public async Task<IActionResult> UpdateCategory([FromBody] CategoryUpdateDTO updateData, int categoryId)
+        {
+            var userId = User.GetUserId();
+
+            var category = await _context.Categories.FindAsync(categoryId);
+            if (category == null)
+                return NotFound(new { message = "Category not found." });
+
+            if (category.OwnerId != userId)
+                return Forbid();
+
+            // Flag
+            bool hasChanges = false;
+
+            hasChanges |= TryUpdateName(category, updateData.Name);
+            hasChanges |= TryUpdateHexColor(category, updateData.HexColor);
+            hasChanges |= TryUpdatePrivacy(category, updateData.IsPrivate);
+
+            if (hasChanges) await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
         #endregion
 
         #region DELETE
+        // Deletes an existing category with the token (DELETE /api/categories/{categoryId})
+        [Authorize]
+        [HttpDelete("{categoryId}")]
+        public async Task<IActionResult> DeleteCategory(int categoryId)
+        {
+            var userId = User.GetUserId();
+
+            var category = await _context.Categories.FindAsync(categoryId);
+
+            // If not exists, return 404
+            if (category == null)
+                return NotFound(new { message = "Category not found." });
+
+            // Check the category is of the user trying to delete it
+            if (category.OwnerId != userId)
+                return Forbid();
+
+            // Execute the deletetion
+            _context.Categories.Remove(category);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
         #endregion
 
         #region Methods
@@ -109,6 +157,37 @@ namespace StoreYourStuffAPI.Controllers
 
             return Ok(category);
         }
+        #endregion
+
+        #region Try Update Methods
+        private bool TryUpdateName(Category cat, string? name)
+        {
+            if (!string.IsNullOrWhiteSpace(name) && !string.Equals(cat.Name, name))
+            {
+                cat.Name = name;
+                return true;
+            }
+            return false;
+        }
+        private bool TryUpdateHexColor(Category cat, string? hexColor)
+        {
+            if (!string.IsNullOrWhiteSpace(hexColor) && !string.Equals(cat.HexColor, hexColor))
+            {
+                cat.HexColor = hexColor;
+                return true;
+            }
+            return false;
+        }
+        private bool TryUpdatePrivacy(Category cat, bool? privacy)
+        {
+            if (privacy.HasValue && cat.IsPrivate != privacy)
+            {
+                cat.IsPrivate = privacy.Value;
+                return true;
+            }
+            return false;
+        }
+
         #endregion
     }
 }
