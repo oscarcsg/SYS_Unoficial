@@ -1,4 +1,5 @@
 ﻿using Microsoft.Identity.Client;
+using StoreYourStuffAPI.DTOs.Category;
 
 namespace StoreYourStuffAPI.DTOs.Link
 {
@@ -9,5 +10,6 @@ namespace StoreYourStuffAPI.DTOs.Link
         public string? Description { get; set; }
         public bool IsPrivate { get; set; }
         public int OwnerId { get; set; }
+        public List<CategoryResponseDTO> Categories { get; set; } = [];
     }
 }

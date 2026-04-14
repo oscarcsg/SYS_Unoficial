@@ -1,4 +1,6 @@
-﻿namespace StoreYourStuffAPI.Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace StoreYourStuffAPI.Models
 {
     public class SharedLink
     {
@@ -8,6 +10,7 @@
         public int UserId { get; set; }
         public User User { get; set; } = null!; // Navigation property
 
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public DateTime SharedAt { get; set; } = DateTime.UtcNow;
     }
 }

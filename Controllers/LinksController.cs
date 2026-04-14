@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using StoreYourStuffAPI.Data;
 using StoreYourStuffAPI.DTOs.Category;
 using StoreYourStuffAPI.DTOs.Link;
+using StoreYourStuffAPI.DTOs.SharedLinks;
 using StoreYourStuffAPI.Extensions;
 using StoreYourStuffAPI.Models;
 
@@ -22,6 +23,7 @@ namespace StoreYourStuffAPI.Controllers
         public LinksController(AppDbContext context) { _context = context; }
         #endregion
 
+        #region Regular Links
         #region GET
         // GET a preview of all links of the user using the token (GET /api/links)
         [Authorize]
@@ -39,7 +41,18 @@ namespace StoreYourStuffAPI.Controllers
                     Title = l.Title,
                     Description = l.Description,
                     IsPrivate = l.IsPrivate,
-                    OwnerId = l.OwnerId
+                    OwnerId = l.OwnerId,
+                    Categories = l.LinkCategories
+                        .Select(lc => lc.Category)
+                        .Select(c => new CategoryResponseDTO
+                        {
+                            Id = c.Id,
+                            Name = c.Name,
+                            HexColor = c.HexColor,
+                            IsPrivate = c.IsPrivate,
+                            OwnerId = c.OwnerId
+                        })
+                        .ToList()
                 })
                 .ToListAsync();
 
@@ -101,7 +114,8 @@ namespace StoreYourStuffAPI.Controllers
                 // Create the relation link-category for each valid category
                 validCategoriesIds.ForEach(cid =>
                     linkEntity.LinkCategories.Add(
-                        new LinkCategory {
+                        new LinkCategory
+                        {
                             CategoryId = cid,
                         })
                     );
@@ -315,5 +329,134 @@ namespace StoreYourStuffAPI.Controllers
             return hasChanges;
         }
         #endregion
+        #endregion
+
+        #region Shared Links
+        #region GET
+        // Get all the links shared with the logged user (token) (GET /api/links/shared-with-me)
+        [Authorize]
+        [HttpGet("shared-with-me")]
+        public async Task<ActionResult<IEnumerable<LinkPreviewDTO>>> GetSharedWithMe()
+        {
+            var userId = User.GetUserId();
+
+            var sharedLinks = await _context.SharedLinks
+                // Use the non-clustered index of the SharedLinks table of the DB
+                .Where(sl => sl.UserId == userId)
+                // Go to the Links table
+                .Select(sl => sl.Link)
+                // Map the data (SIN async aquí)
+                .Select(l => new LinkPreviewDTO
+                {
+                    Id = l.Id,
+                    Title = l.Title,
+                    Description = l.Description,
+                    IsPrivate = l.IsPrivate,
+                    OwnerId = l.OwnerId,
+                    Categories = l.LinkCategories
+                        .Select(lc => lc.Category)
+                        // Privacy: only public categories
+                        .Where(c => c.IsPrivate == false)
+                        .Select(c => new CategoryResponseDTO
+                        {
+                            Id = c.Id,
+                            Name = c.Name,
+                            HexColor = c.HexColor,
+                            IsPrivate = c.IsPrivate,
+                            OwnerId = c.OwnerId
+                        }).ToList()
+                })
+                .ToListAsync();
+
+            return Ok(sharedLinks);
+        }
+        #endregion
+
+        #region POST
+        // Shares a link with a friend (POST /api/links/{linkId}/share-with/{friendId})
+        [Authorize]
+        [HttpPost("{linkId}/share-with/{friendId}")]
+        public async Task<IActionResult> ShareLinkWithFriend(long linkId, int friendId)
+        {
+            var userId = User.GetUserId();
+
+            // Check if the user and friend are the same
+            if (userId == friendId)
+                return BadRequest(new { message = "You cannot share a link with yourself." });
+            
+            // Check if the link exists and the user is the owner
+            var link = await _context.Links.FindAsync(linkId);
+
+            if (link == null)
+                return NotFound(new { message = "Link not found. It may not exist." });
+            if (link.OwnerId != userId)
+                return Forbid();
+
+            // Check if they are friends
+            var friendshipStatus = await _context.Friendships
+                .Where(f =>
+                    (f.AddresseeId == userId && f.RequesterId == friendId) ||
+                    (f.RequesterId == userId && f.AddresseeId == friendId)
+                )
+                .Select(f => f.Status)
+                .FirstOrDefaultAsync();
+
+            if (friendshipStatus != 1)
+                return BadRequest(new { message = "The user selected is not a friend." });
+
+            // Check if the link is already shared with that friend
+            var alreadyShared = await _context.SharedLinks
+                .AnyAsync(sl => sl.UserId == friendId && sl.LinkId == linkId);
+
+            if (alreadyShared)
+                return BadRequest(new { message = "This links is already shared with this friend." });
+
+            var share = new SharedLink
+            {
+                LinkId = linkId,
+                UserId = friendId,
+            };
+
+            _context.SharedLinks.Add(share);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+        #endregion
+
+        #region DELETE
+        // Stop sharing a link with a friend (DELETE /api/links/{linkId}/revoque-share/{friendId})
+        [Authorize]
+        [HttpDelete("{linkId}/revoque-share/{friendId}")]
+        public async Task<IActionResult> StopSharingLinkWithFriend(long linkId, int friendId)
+        {
+            var userId = User.GetUserId();
+
+            // Check if the user and friend are the same
+            if (userId == friendId)
+                return BadRequest(new { message = "You cannot stop sharing a link with yourself." });
+
+            // Check if the link exists and the user is the owner
+            var link = await _context.Links.FindAsync(linkId);
+
+            if (link == null)
+                return NotFound(new { message = "Link not found. Link may not exist." });
+            if (link.OwnerId != userId)
+                return Forbid();
+
+            // Check if the link is currently being shared with that friend
+            var currentlyShared = await _context.SharedLinks.FindAsync(linkId, friendId);
+
+            if (currentlyShared == null)
+                return BadRequest(new { message = "This link is not currently being shared with this friend." });
+
+            _context.SharedLinks.Remove(currentlyShared);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+        #endregion
+        #endregion
     }
 }
+    

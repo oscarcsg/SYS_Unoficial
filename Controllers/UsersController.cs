@@ -101,6 +101,8 @@ namespace StoreYourStuffAPI.Controllers
             if (!await _context.Users.AnyAsync(u => u.Id == userId))
                 return NotFound(new { message = "User does not exists." });
 
+            int? currentVisitorId = User.Identity?.IsAuthenticated == true ? User.GetUserId() : null;
+
             // Get all user' links
             var publicLinks = await _context.Links
                 .Where(l => l.OwnerId == userId && !l.IsPrivate)
@@ -111,6 +113,18 @@ namespace StoreYourStuffAPI.Controllers
                     Description = l.Description,
                     IsPrivate = l.IsPrivate,
                     OwnerId = l.OwnerId,
+                    Categories = l.LinkCategories
+                        .Select(lc => lc.Category)
+                        // Privacy, get only the public categories
+                        .Where(c => !c.IsPrivate || (currentVisitorId != null && c.OwnerId == currentVisitorId))
+                        .Select(c => new CategoryResponseDTO
+                        {
+                            Id = c.Id,
+                            Name = c.Name,
+                            HexColor = c.HexColor,
+                            IsPrivate = c.IsPrivate,
+                            OwnerId = c.OwnerId
+                        }).ToList()
                 })
                 .ToListAsync();
 
