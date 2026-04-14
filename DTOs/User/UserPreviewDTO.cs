@@ -1,6 +1,6 @@
 ﻿namespace StoreYourStuffAPI.DTOs.User
 {
-    public class UserSearchDTO
+    public class UserPreviewDTO
     {
         public int Id { get; set; }
         public string Alias { get; set; } = string.Empty;

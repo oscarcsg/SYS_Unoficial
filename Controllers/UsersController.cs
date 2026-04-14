@@ -55,7 +55,7 @@ namespace StoreYourStuffAPI.Controllers
 
         // GET user searched by alias or email (GET /api/users/search?search=)
         [HttpGet("search")]
-        public async Task<ActionResult<IEnumerable<UserSearchDTO>>> SearchUser([FromQuery] string? search)
+        public async Task<ActionResult<IEnumerable<UserPreviewDTO>>> SearchUser([FromQuery] string? search)
         {
             if (string.IsNullOrWhiteSpace(search))
                 return BadRequest(new { message = "Search string can not be empty." });
@@ -65,7 +65,7 @@ namespace StoreYourStuffAPI.Controllers
 
             var users = await _context.Users
                 .Where(u => u.Alias.Contains(search) || u.Email.Contains(search))
-                .Select(u => new UserSearchDTO
+                .Select(u => new UserPreviewDTO
                 {
                     Id = u.Id,
                     Alias = u.Alias,

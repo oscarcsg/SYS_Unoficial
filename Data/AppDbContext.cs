@@ -12,6 +12,7 @@ namespace StoreYourStuffAPI.Data
         public DbSet<Category> Categories { get; set; }
         public DbSet<LinkCategory> LinkCategories { get; set; }
         public DbSet<SharedLink> SharedLinks { get; set; }
+        public DbSet<Friendship> Friendships { get; set; }
         #endregion
 
         #region Constructors

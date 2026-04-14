@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 
-	<Version>0.18.0</Version>
+	<Version>0.19.0</Version>
 	<Authors>oscarcsg</Authors>
 	<Company>CompileMind</Company>
 	<Description>Main API to connect StoreYourStuff app with its database.</Description>
