@@ -247,11 +247,15 @@ namespace StoreYourStuffAPI.Controllers
             if (string.IsNullOrWhiteSpace(loginAttempt.Alias) && string.IsNullOrWhiteSpace(loginAttempt.Email))
                 return BadRequest(new { message = "An alias or email is required for login." });
 
-            // Search the data of the user depending on the data given by the form
-            var user = await _context.Users.FirstOrDefaultAsync(u => 
-                (!string.IsNullOrWhiteSpace(loginAttempt.Alias) && u.Alias == loginAttempt.Alias) ||
-                (!string.IsNullOrWhiteSpace(loginAttempt.Email) && u.Email == loginAttempt.Email)
-            );
+            // Build the query manually so it is more optimized and surely uses the DB indexes
+            IQueryable<User> query = _context.Users;
+
+            if (!string.IsNullOrWhiteSpace(loginAttempt.Email))
+                query = query.Where(u => u.Email == loginAttempt.Email);
+            else if (!string.IsNullOrWhiteSpace(loginAttempt.Alias))
+                query = query.Where(u => u.Alias == loginAttempt.Alias);
+
+            var user = await query.FirstOrDefaultAsync();
 
             // Make sure if the user exists
             if (user == null) return Unauthorized(new { message = "Invalid credentials." });

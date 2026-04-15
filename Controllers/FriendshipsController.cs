@@ -127,20 +127,23 @@ namespace StoreYourStuffAPI.Controllers
                 if (existingFriendship.Status == 3)
                     return BadRequest(new { message = "Blocked friendship." });
 
-                // At this point, it is a "declined", so delete it so it an be resent
-                _context.Friendships.Remove(existingFriendship);
+                // Modify the existing friendship
+                existingFriendship.Status = 0; // Pending again
+                existingFriendship.CreatedAt = DateTime.UtcNow; // Update date
+            }
+            else
+            {
+                // Only add if it didn't exist before
+                var newFriendship = new Friendship
+                {
+                    RequesterId = userId,
+                    AddresseeId = addresseeId,
+                    Status = 0,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.Friendships.Add(newFriendship);
             }
 
-            // Create the request
-            var newFriendship = new Friendship
-            {
-                RequesterId = userId,
-                AddresseeId = addresseeId,
-                Status = 0, // Pending
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _context.Friendships.Add(newFriendship);
             await _context.SaveChangesAsync();
 
             // Response, return the user just been requested
@@ -161,6 +164,10 @@ namespace StoreYourStuffAPI.Controllers
         [HttpPut("respond/{requesterId}")]
         public async Task<IActionResult> UpdateFriendship([FromBody] FriendshipUpdateDTO updateData, int requesterId)
         {
+            // NOTE: in this method, a ExecuteUpdateAsync could be used, but as I
+            // controlls when the status is rejected to remove it, I think
+            // .EUA() could not work well
+
             var userId = User.GetUserId(); // This is the addressee
 
             // Search the relation where requester is from url and addressee from token

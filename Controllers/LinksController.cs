@@ -398,7 +398,7 @@ namespace StoreYourStuffAPI.Controllers
                     (f.AddresseeId == userId && f.RequesterId == friendId) ||
                     (f.RequesterId == userId && f.AddresseeId == friendId)
                 )
-                .Select(f => f.Status)
+                .Select(f => (byte?)f.Status)
                 .FirstOrDefaultAsync();
 
             if (friendshipStatus != 1)
