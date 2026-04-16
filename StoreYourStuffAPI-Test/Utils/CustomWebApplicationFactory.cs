@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +10,8 @@ namespace StoreYourStuffAPI_Test.Utils
 {
     public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     {
+        private readonly string _dbName = $"TestDB_{System.Guid.NewGuid()}";
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.ConfigureTestServices(services =>
@@ -36,10 +38,10 @@ namespace StoreYourStuffAPI_Test.Utils
                     services.Remove(descriptor);
                 }
 
-                // 4. Con el terreno 100% esterilizado, plantamos In-Memory
+                // 4. Con el terreno 100% esterilizado, plantamos In-Memory con un nombre único por Factory
                 services.AddDbContext<AppDbContext>(options =>
                 {
-                    options.UseInMemoryDatabase("BaseDeDatosParaTests");
+                    options.UseInMemoryDatabase(_dbName);
                 });
             });
         }
