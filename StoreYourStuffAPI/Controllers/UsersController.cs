@@ -159,7 +159,7 @@ namespace StoreYourStuffAPI.Controllers
         #region POST
         // POST to create a new user (POST /api/users)
         [HttpPost]
-        public async Task<ActionResult<UserResponseDTO>> CreateUser(UserCreateDTO newUser)
+        public async Task<IActionResult> CreateUser(UserCreateDTO newUser)
         {
             var hashedPassword = _passwordHasher.HashPassword(newUser.Password);
             // Transform the DTO to a real User Model of the DDBB
@@ -174,18 +174,8 @@ namespace StoreYourStuffAPI.Controllers
             _context.Users.Add(userEntity);
             await _context.SaveChangesAsync();
 
-            // Transform the new user to a secure DTO to return it
-            var responseDTO = new UserResponseDTO
-            {
-                Id = userEntity.Id,
-                Alias = userEntity.Alias,
-                Email = userEntity.Email,
-                CreatedAt = userEntity.CreatedAt,
-                LastSignIn = userEntity.LastSignIn,
-            };
-
             // Return a 201 code (created) and user's secure data
-            return CreatedAtAction(nameof(GetUserById), new { userId = userEntity.Id }, responseDTO);
+            return Ok(new { message = "User registered successfully. Please, log-in." });
         }
         #endregion
 
