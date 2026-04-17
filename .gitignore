@@ -36,6 +36,7 @@ bld/
 [Ll]ogs/
 
 appsettings.local.json
+StoreYourStuff-MockData.sql
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/

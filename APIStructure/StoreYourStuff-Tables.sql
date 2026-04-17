@@ -33,13 +33,13 @@ BEGIN
 		-- FKs
 		CONSTRAINT FK_Friendships_Requester FOREIGN KEY (requesterId) REFERENCES Users(userId),
 		CONSTRAINT FK_Friendships_Addressee FOREIGN KEY (addresseeId) REFERENCES Users(userId),
-		-- Evita que el usuario se agregue a sí mismo
+		-- Evita que el usuario se agregue a sÃ­ mismo
 		CONSTRAINT CHK_Friendships_NoSelf CHECK (requesterId <> addresseeId),
-		-- Restricción de unicidad usando las columnas calculadas
+		-- RestricciÃ³n de unicidad usando las columnas calculadas
 		CONSTRAINT UQ_Friendships_Bidirectional UNIQUE (_userMin, _userMax)
 	) WITH (DATA_COMPRESSION = ROW);
 
-	-- Índice para buscar rápido quién te ha enviado solicitudes
+	-- Ãndice para buscar rÃ¡pido quiÃ©n te ha enviado solicitudes
 	CREATE NONCLUSTERED INDEX IX_Friendships_AddresseeId ON Friendships(addresseeId);
 END
 
@@ -57,7 +57,7 @@ BEGIN
 		CONSTRAINT FK_Links_Owner FOREIGN KEY (ownerId) REFERENCES Users(userId)
 	) WITH (DATA_COMPRESSION = ROW);
 
-	-- Crea un índice súper rápido para buscar links por su dueño
+	-- Crea un Ã­ndice sÃºper rÃ¡pido para buscar links por su dueÃ±o
 	CREATE NONCLUSTERED INDEX IX_Links_OwnerId ON Links(ownerId);
 END
 
@@ -67,7 +67,7 @@ BEGIN
 		categoryId INT IDENTITY(1, 1) PRIMARY KEY,
 		name NVARCHAR(50) NOT NULL,
 		hexColor CHAR(6) NOT NULL DEFAULT 'd2d2d2',
-		isPrivate BIT NOT NULL DEFAULT 0, -- Si es 1, entonces esa categoría NO se compartirá con otros usuarios en enlaces compartidos
+		isPrivate BIT NOT NULL DEFAULT 0, -- Si es 1, entonces esa categorÃ­a NO se compartirÃ¡ con otros usuarios en enlaces compartidos
 		ownerId INT DEFAULT NULL,
 
 		CONSTRAINT FK_Categories_Owner FOREIGN KEY (ownerId) REFERENCES Users(userId)
@@ -75,9 +75,9 @@ BEGIN
 	
 	CREATE NONCLUSTERED INDEX IX_Categories_OwnerId ON Categories(ownerId);
 END
--- NOTA: Las categorías tienen dueño, las categorías del sistema (las predefinidas para todos los usuarios) tiene como owner "NULL"
--- las categorías que tengan como owner el id del usuario que las creó, sólo ese y sus compartidos (en caso de que la categoría no
--- esté marcada como privada) podrán ver la categoría.
+-- NOTA: Las categorÃ­as tienen dueÃ±o, las categorÃ­as del sistema (las predefinidas para todos los usuarios) tiene como owner "NULL"
+-- las categorÃ­as que tengan como owner el id del usuario que las creÃ³, sÃ³lo ese y sus compartidos (en caso de que la categorÃ­a no
+-- estÃ© marcada como privada) podrÃ¡n ver la categorÃ­a.
 
 IF OBJECT_ID('LinkCategories', 'U') IS NULL
 BEGIN
@@ -107,59 +107,6 @@ BEGIN
 		CONSTRAINT FK_SharedLinks_Users FOREIGN KEY (userId) REFERENCES Users(userId)
 	) WITH (DATA_COMPRESSION = ROW);
 
-	-- Crea un índice para buscar rápidamente con qué usuarios se compartió un link
+	-- Crea un Ã­ndice para buscar rÃ¡pidamente con quÃ© usuarios se compartiÃ³ un link
 	CREATE NONCLUSTERED INDEX IX_SharedLinks_UserId ON SharedLinks(userId);
 END
-
-
--- --------------------------- --
---           INSERTS           --
--- --------------------------- --
--- 1. USUARIOS
-INSERT INTO Users (alias, email, password)
-VALUES 
-    ('oscar', 'oscar@syt.com', '12345'), -- userId = 1
-    ('maria', 'maria@syt.com', '54321'); -- userId = 2
-
--- 1.5 AMISTADES (NUEVO)
-INSERT INTO Friendships (requesterId, addresseeId, status)
-VALUES 
-    (1, 2, 1); -- Oscar (1) le envió a Maria (2) y ella Aceptó (1)
-
--- 2. CATEGORÍAS
-INSERT INTO Categories (name, hexColor, isPrivate, ownerId)
-VALUES 
-    -- Categorías del sistema (ownerId es NULL, private es 0)
-    ('Programación', '2ECC71', 0, NULL),     -- categoryId = 1
-    ('Herramientas', 'E67E22', 0, NULL),     -- categoryId = 2
-    ('Noticias', '3498DB', 0, NULL),         -- categoryId = 3
-    ('Entretenimiento', '9B59B6', 0, NULL),  -- categoryId = 4
-    
-    -- Categoría personalizada de Oscar y PRIVADA
-    ('Proyectos Secretos', 'E74C3C', 1, 1);  -- categoryId = 5
-
--- 3. ENLACES (LINKS)
-INSERT INTO Links (title, description, url, isPrivate, ownerId)
-VALUES 
-    ('GitHub', 'Plataforma para alojar repositorios Git', 'https://github.com', 1, 1),             -- linkId = 1
-    ('StackOverflow', 'Foro de preguntas y respuestas', 'https://stackoverflow.com', 0, 1),        -- linkId = 2
-    ('Hacker News', 'Noticias sobre tecnología y startups', 'https://news.ycombinator.com', 0, 1), -- linkId = 3
-    ('Regex101', 'Prueba y testeo de expresiones regulares', 'https://regex101.com', 0, 1),        -- linkId = 4
-    ('YouTube', 'Plataforma de videos', 'https://youtube.com', 0, 1);                              -- linkId = 5
-
--- 4. CATEGORÍAS DE LOS ENLACES
-INSERT INTO LinkCategories (linkId, categoryId)
-VALUES 
-    (1, 1), -- GitHub -> Programación
-    (1, 2), -- GitHub -> Herramientas
-    (1, 5), -- GitHub -> Proyectos Secretos (Categoría privada de Oscar)
-    (2, 1), -- StackOverflow -> Programación
-    (3, 3), -- Hacker News -> Noticias
-    (4, 1), -- Regex101 -> Programación
-    (4, 2), -- Regex101 -> Herramientas
-    (5, 4); -- YouTube -> Entretenimiento
-
--- 5. ENLACES COMPARTIDOS
-INSERT INTO SharedLinks (linkId, userId)
-VALUES 
-    (1, 2); -- El link 1 (GitHub) se comparte con el usuario 2 (Maria)
